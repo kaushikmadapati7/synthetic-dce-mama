@@ -1,0 +1,5 @@
+# build context is the mama_synth/ package dir; keep it lean (model.pt IS needed)
+**/__pycache__
+*.pyc
+.git
+runs

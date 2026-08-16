@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+
+# experiment outputs / logs / checkpoints
+runs/
+probe/
+logs/
+*.log
+
+# generated paper artifacts (regenerable from runs/ via the figs scripts)
+paper/figs/out/
+# Springer LNCS class/style fetched locally for compilation (Overleaf provides these)
+paper/llncs.cls
+paper/splncs04.bst
+# standalone method-figure build artifacts (source .tex is tracked)
+paper/figs/method_figure*.pdf
+# method_figure_v4.pdf is used as Fig. 1 in the paper, so track it
+!paper/figs/method_figure_v4.pdf
+paper/figs/*.aux
+paper/figs/*.log
+paper/metrics.csv
+paper/metrics_seeds.csv
+paper/probe.csv
+paper/*.pdf
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.log
+paper/*.out
+
+# submission containers (large; staged locally, never committed)
+*.tar.gz
+
+# model weights & medical volumes (never commit data)
+*.pth
+*.pt
+*.ckpt
+*.nii
+*.nii.gz
+*.mha
+*.mhd
+*.raw
+
+# local env
+venv/
+.venv/
+env/
+
+# internal developer notes (kept local, not published)
+/CLAUDE.md
+# overleaf export (build artifact)
+paper/*.zip

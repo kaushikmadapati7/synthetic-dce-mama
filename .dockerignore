@@ -1,0 +1,6 @@
+# used by submission/Dockerfile (build context = this package dir). Keep the context
+# lean — model.pt under submission/model/ IS needed and is NOT ignored.
+**/__pycache__
+*.pyc
+.git
+runs

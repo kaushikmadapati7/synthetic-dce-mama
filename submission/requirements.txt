@@ -1,0 +1,6 @@
+# MAMA-SYNTH submission deps. CPU torch keeps the image small; inference of one
+# 2D slice is sub-second on CPU (GC may also provide GPU, which torch will use).
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+SimpleITK>=2.3.0
+numpy

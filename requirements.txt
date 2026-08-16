@@ -1,0 +1,14 @@
+# mama_synth runtime dependencies (Python >= 3.10).
+# Versions left unpinned so the right CUDA-matched torch wheel is picked per machine
+# (PyPI's default torch wheel bundles its own CUDA runtime and works on GPU nodes).
+# Install with:  python -m pip install -r mama_synth/requirements.txt
+
+# --- core (required) ---
+numpy
+torch              # 3D->2D models, training; CUDA build pulled automatically on linux
+torchvision        # VGG16 backbone for the perceptual loss
+SimpleITK          # .mha / NIfTI volume I/O
+
+# --- optional (graceful-degrade if absent) ---
+matplotlib         # sample montage PNGs in eval.py
+torch_fidelity     # FID metric (skipped automatically if not installed / --no-fid)
