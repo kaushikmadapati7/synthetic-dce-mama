@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>When Regression Beats Generation: Virtual Contrast-Enhanced Breast MRI</title>
+<meta name="description" content="Residual regression for virtual contrast-enhanced breast MRI, and what the MAMA-SYNTH challenge metrics actually reward. MICCAI 2026, Deep-Breath workshop.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🩻</text></svg>">
+<style>
+:root {
+  --purple: #351C75; --magenta: #B20B7A; --ink: #1E1E28; --muted: #55556A;
+  --line: #D9D6E2; --tint: #EFEAF8; --bg: #FFFFFF; --panel: #0C0C12;
+  --serif: Georgia, "Times New Roman", serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --purple: #B9A6F2; --magenta: #F07CC4; --ink: #ECEAF4; --muted: #A9A7BC;
+    --line: #34313F; --tint: #221C33; --bg: #121118; --panel: #000;
+  }
+}
+:root[data-theme="dark"] {
+  --purple: #B9A6F2; --magenta: #F07CC4; --ink: #ECEAF4; --muted: #A9A7BC;
+  --line: #34313F; --tint: #221C33; --bg: #121118; --panel: #000;
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+body {
+  margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans);
+  font-size: 17px; line-height: 1.6;
+  padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+}
+main { max-width: 1080px; margin: 0 auto; padding: 0 24px 72px; }
+.prose { max-width: 70ch; }
+h1, h2, h3 { font-family: var(--serif); font-weight: 700; color: var(--ink); line-height: 1.2; }
+h1 { font-size: clamp(1.9rem, 3.8vw, 2.6rem); margin: 56px 0 18px; max-width: 34ch; letter-spacing: -0.01em; }
+h2 { font-size: 1.75rem; margin: 72px 0 12px; }
+h3 { font-size: 1.15rem; margin: 0 0 4px; }
+p { margin: 0 0 14px; }
+a { color: var(--purple); text-underline-offset: 3px; }
+a:hover { color: var(--magenta); }
+:focus-visible { outline: 3px solid var(--magenta); outline-offset: 3px; border-radius: 2px; }
+.authors { font-size: 1.05rem; margin: 0 0 2px; }
+.affil, .venue { color: var(--muted); font-size: 0.95rem; margin: 0; }
+.venue { margin-top: 6px; }
+.links { display: flex; flex-wrap: wrap; gap: 12px; margin: 26px 0 8px; }
+.btn {
+  display: inline-block; padding: 10px 18px; border-radius: 6px; text-decoration: none;
+  font-weight: 600; border: 2px solid var(--purple); color: var(--purple); background: transparent;
+}
+.btn.primary { background: var(--purple); color: var(--bg); }
+.btn:hover { border-color: var(--magenta); color: var(--magenta); }
+.btn.primary:hover { background: var(--magenta); color: #fff; }
+.lede { font-family: var(--serif); font-size: 1.22rem; line-height: 1.65; margin-top: 40px; }
+
+/* ---------- compare viewer ---------- */
+.viewer { margin: 44px 0 0; display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 28px; align-items: start; }
+.stage { position: relative; aspect-ratio: 1 / 1; background: var(--panel); border-radius: 6px; overflow: hidden; touch-action: pan-y; cursor: ew-resize; }
+.stage:focus-within { outline: 3px solid var(--magenta); outline-offset: 3px; }
+.stage img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; user-select: none; -webkit-user-drag: none; }
+.stage .right { clip-path: inset(0 0 0 var(--split, 50%)); }
+.stage .divider { position: absolute; top: 0; bottom: 0; left: var(--split, 50%); width: 2px; background: #fff; transform: translateX(-1px); pointer-events: none; }
+.stage .grip { position: absolute; top: 50%; left: var(--split, 50%); width: 40px; height: 40px; margin: -20px 0 0 -20px;
+  border-radius: 50%; background: #fff; box-shadow: 0 1px 6px rgba(0,0,0,.45); pointer-events: none; }
+.stage .grip::before, .stage .grip::after { content: ""; position: absolute; top: 14px; border: 6px solid transparent; }
+.stage .grip::before { left: 4px; border-right-color: var(--purple); }
+.stage .grip::after { right: 4px; border-left-color: var(--purple); }
+.stage .tag { position: absolute; top: 12px; padding: 3px 10px; font-size: 0.85rem; font-weight: 600; color: #fff; background: rgba(0,0,0,.6); border-radius: 4px; pointer-events: none; }
+.stage .tag.l { left: 12px; } .stage .tag.r { right: 12px; }
+.stage input[type=range] { position: absolute; left: 0; bottom: 0; width: 100%; height: 1px; margin: 0; opacity: 0; pointer-events: none; }
+.controls label { display: block; font-weight: 600; font-size: 0.95rem; margin: 18px 0 6px; }
+.controls label:first-child { margin-top: 0; }
+.controls select { width: 100%; font: inherit; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.cases { display: flex; gap: 8px; }
+.cases button { flex: 1; font: inherit; padding: 8px 0; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+.cases button[aria-pressed=true] { background: var(--purple); border-color: var(--purple); color: var(--bg); font-weight: 600; }
+.note { color: var(--muted); font-size: 0.92rem; margin-top: 16px; }
+
+/* ---------- metric probe ---------- */
+.probe-wrap { overflow-x: auto; margin: 20px 0 18px; }
+table.probe { min-width: 0; max-width: 760px; }
+table.probe td:last-child, table.probe th:last-child { border-left: 1px solid var(--line); }
+.fig-probe img { max-width: 900px; }
+.fig-probe a { display: block; max-width: 900px; }
+
+/* ---------- table ---------- */
+.table-wrap { overflow-x: auto; margin-top: 18px; }
+table { border-collapse: collapse; width: 100%; min-width: 760px; font-variant-numeric: tabular-nums; }
+th, td { padding: 10px 12px; text-align: right; border-bottom: 1px solid var(--line); }
+th:first-child, td:first-child { text-align: left; }
+thead th { border-bottom: 2px solid var(--ink); font-size: 0.95rem; }
+thead button { font: inherit; font-weight: 700; color: var(--ink); background: none; border: 0; cursor: pointer; padding: 0; }
+thead button .arrow { color: var(--muted); font-weight: 400; }
+tbody tr.ours td { background: var(--tint); }
+td.best { font-weight: 700; }
+
+/* ---------- figures, cite ---------- */
+figure { margin: 22px 0 0; }
+figure img { width: 100%; height: auto; display: block; }
+figcaption { color: var(--muted); font-size: 0.92rem; margin-top: 10px; max-width: 80ch; }
+.fig-method img { max-width: 760px; }
+pre { background: var(--tint); padding: 18px 20px; border-radius: 6px; overflow-x: auto; font-size: 0.88rem; line-height: 1.5; margin: 12px 0 0; }
+.copy { margin-top: 10px; font: inherit; font-weight: 600; padding: 8px 14px; border-radius: 6px; border: 2px solid var(--purple); color: var(--purple); background: transparent; cursor: pointer; }
+footer { border-top: 1px solid var(--line); margin-top: 72px; padding-top: 22px; color: var(--muted); font-size: 0.92rem; }
+
+@media (max-width: 820px) {
+  .viewer { grid-template-columns: 1fr; }
+  body { font-size: 16px; }
+  table.probe th, table.probe td { padding: 9px 6px; font-size: 15px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>When Regression Beats Generation: Virtual Contrast-Enhanced Breast MRI and What Its Metrics Reward</h1>
+  <p class="authors">Kaushik Madapati<sup>1,2</sup>, Hanxue Gu<sup>1</sup>, Jie Bao<sup>1</sup>, Kang Wang<sup>1</sup>, Yang Yang<sup>1</sup></p>
+  <p class="affil"><sup>1</sup> Department of Radiology and Biomedical Imaging, University of California San Francisco<br><sup>2</sup> College of Engineering, University of California Berkeley</p>
+  <p class="venue">MICCAI 2026, Deep-Breath workshop and MAMA-SYNTH challenge</p>
+  <div class="links">
+    <a class="btn primary" href="https://github.com/kaushikmadapati7/synthetic-dce-mama">View code on GitHub</a>
+    <a class="btn" href="assets/poster.pdf">Download poster (PDF)</a>
+  </div>
+
+  <section class="viewer" aria-label="Compare pre-contrast, ground truth and model outputs">
+    <div class="stage" id="stage">
+      <img class="left" id="imgL" alt="">
+      <img class="right" id="imgR" alt="">
+      <div class="divider"></div><div class="grip"></div>
+      <span class="tag l" id="tagL"></span><span class="tag r" id="tagR"></span>
+      <input type="range" id="split" min="0" max="100" value="50" aria-label="Drag to compare the two images">
+    </div>
+    <div class="controls">
+      <label id="caseLabel">Test case</label>
+      <div class="cases" role="group" aria-labelledby="caseLabel">
+        <button type="button" data-case="1">1</button>
+        <button type="button" data-case="2">2</button>
+        <button type="button" data-case="3">3</button>
+      </div>
+      <label for="selL">Left image</label>
+      <select id="selL"></select>
+      <label for="selR">Right image</label>
+      <select id="selR"></select>
+      <p class="note">Drag or tap across the image to compare. The tumour is outlined in green. These are the three test cases with the largest tumours.</p>
+    </div>
+  </section>
+
+  <div class="prose">
+    <p class="lede">Breast DCE-MRI needs an intravenous gadolinium injection. We predict the post-contrast image from the pre-contrast scan with a residual U-Net that starts from a copy of its input, and at a matched budget it beats GAN and diffusion baselines on every fidelity and tumour metric. Along the way we found that the challenge's eight metrics measure less than they appear to.</p>
+  </div>
+
+  <section aria-labelledby="h-dial">
+    <h2 id="h-dial">What the metrics reward</h2>
+    <div class="prose">
+      <p>To see what the challenge's metrics respond to, we set the models aside and altered the ground-truth images directly, then re-scored them with the official pipeline. Scaling the enhancement up or down exposes the clearest problem.</p>
+    </div>
+    <div class="probe-wrap"><table class="probe"><caption class="sr-only" style="position:absolute;left:-9999px">MSE and FRD when the true enhancement is scaled</caption><thead><tr><th scope="col">Scale</th><th scope="col">0.5×</th><th scope="col">0.75×</th><th scope="col">1.25×</th><th scope="col">1.5×</th><th scope="col">Copy input</th></tr></thead><tbody><tr><th scope="row">MSE</th><td>0.44</td><td>0.11</td><td>0.11</td><td>0.44</td><td>1.76</td></tr><tr><th scope="row">FRD</th><td>4.70</td><td>3.31</td><td>28.19</td><td>29.69</td><td>5.88</td></tr></tbody></table><p class="note">Both metrics: lower is better. Scales are relative to the true enhancement; "copy input" scores the unaltered pre-contrast image.</p></div>
+    <div class="prose">
+      <p>MSE treats too little and too much enhancement the same. FRD barely notices too little: under-enhancing by a quarter scores better than simply copying the pre-contrast input, while over-enhancing by a quarter scores almost five times worse.</p>
+    </div>
+    <figure class="fig-probe">
+      <a href="assets/fig4.png"><img src="assets/fig4.png" alt="Heatmap of all eight metrics under 17 controlled corruptions of ground-truth images" loading="lazy"></a>
+      <figcaption>All 17 corruptions and eight metrics (Fig. 4). Red means the metric judges the corruption worse. Select the figure to open it at full size.</figcaption>
+    </figure>
+    <div class="prose" style="margin-top:22px">
+      <p>Across all 17 corruptions, MSE, tumour SSIM, DICE and HD95 rank them almost identically (Spearman ρ between 0.72 and 0.87), so the eight metrics span roughly three to four independent axes.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-table">
+    <h2 id="h-table">Model comparison</h2>
+    <div class="prose"><p>Stratified split, shared objective. Select a column to sort by it. Our models are shaded and the best value in each column is bold. Each generative family is one configuration at matched capacity.</p></div>
+    <div class="table-wrap"><table id="results"><thead></thead><tbody></tbody></table></div>
+  </section>
+
+  <section aria-labelledby="h-method">
+    <h2 id="h-method">Method</h2>
+    <div class="prose"><p>Most of the post-contrast image is already in the pre-contrast scan, so a U-Net predicts only the enhancement and adds it to the input through an identity connection. Its output layer starts at zero, so training begins from an exact copy of the input. A loss on tumour-region enhancement, a softplus variant that can only add signal, and a segmentation head used only during training complete the model.</p></div>
+    <figure class="fig-method"><img src="assets/fig1.png" alt="Diagram of the residual U-Net with identity connection and auxiliary segmentation head" loading="lazy"><figcaption>Residual U-Net with an identity connection. The auxiliary segmentation head supervises training only.</figcaption></figure>
+  </section>
+
+  <section aria-labelledby="h-loco">
+    <h2 id="h-loco">Generalisation to unseen collections</h2>
+    <div class="prose"><p>Trained on three collections and tested on the fourth, FRD rises from 7.0 to between 9 and 25, worst on the two single-institution cohorts. Scanner-style augmentation does not close the gap, so models should be selected on held-out collections rather than the stratified split.</p></div>
+    <figure><img src="assets/fig3.png" alt="Bar charts of FRD, tumour SSIM, DICE and MSE for each held-out collection, with and without augmentation" loading="lazy"><figcaption>Leave-one-collection-out results without (blue) and with (orange) scanner-style augmentation. The dashed line is the in-distribution score.</figcaption></figure>
+  </section>
+
+  <section aria-labelledby="h-lim">
+    <h2 id="h-lim">Limitations</h2>
+    <div class="prose"><p>Each generative family is a single configuration trained once at our capacity budget, so a tuned or larger model may close part of the gap. The cross-domain results and the metric probe are single runs. We synthesise one 2D slice per patient, and DICE and the AUROCs inherit the errors of the challenge's frozen models.</p></div>
+  </section>
+
+  <section aria-labelledby="h-cite">
+    <h2 id="h-cite">Citation</h2>
+    <pre id="bib">@inproceedings{madapati2026regression,
+  title     = {When Regression Beats Generation: Virtual Contrast-Enhanced
+               Breast {MRI} and What Its Metrics Reward},
+  author    = {Madapati, Kaushik and Gu, Hanxue and Bao, Jie and
+               Wang, Kang and Yang, Yang},
+  booktitle = {MICCAI 2026 Workshops (Deep-Breath)},
+  year      = {2026}
+}</pre>
+    <button class="copy" id="copyBib" type="button">Copy BibTeX</button>
+  </section>
+
+  <footer>
+    <p>Questions: <a href="mailto:kaushi.madapati@ucsf.edu">kaushi.madapati@ucsf.edu</a>. Code, training scripts and the metric probe are at <a href="https://github.com/kaushikmadapati7/synthetic-dce-mama">github.com/kaushikmadapati7/synthetic-dce-mama</a>.</p>
+  </footer>
+</main>
+
+<script>
+const TABLE = {"cols": ["MSE", "LPIPS", "SSIM", "FRD", "AUC-C", "AUC-T", "DICE", "HD95"], "dirs": [-1, -1, 1, -1, 1, 1, 1, -1], "rows": [["Residual U-Net", false, [0.486, 0.086, 0.499, 7.9, 0.808, 0.656, 0.487, 120.7]], ["Multi-task U-Net", false, [0.476, 0.087, 0.534, 8.79, 0.761, 0.677, 0.555, 92.5]], ["Conditional GAN", false, [0.894, 0.192, 0.199, 13.68, 0.83, 0.61, 0.127, 295.1]], ["Latent diffusion (flow)", false, [0.969, 0.159, 0.246, 8.62, 0.888, 0.635, 0.21, 193.5]], ["Ours (multi-task + enhancement loss)", true, [0.503, 0.091, 0.527, 6.55, 0.859, 0.668, 0.551, 83.0]], ["Ours (+ positive)", true, [0.506, 0.092, 0.529, 5.79, 0.822, 0.667, 0.545, 98.6]]]};
+const METHODS = [["pre", "Pre-contrast"], ["gt", "Ground truth"], ["multitask", "Ours (multi-task)"],
+                 ["positive", "Ours (+ positive)"], ["unet", "Residual U-Net"], ["gan", "Conditional GAN"],
+                 ["flow", "Latent diffusion (flow)"]];
+
+/* ---------- compare viewer ---------- */
+const stage = document.getElementById("stage");
+const imgL = document.getElementById("imgL"), imgR = document.getElementById("imgR");
+const selL = document.getElementById("selL"), selR = document.getElementById("selR");
+const split = document.getElementById("split");
+let currentCase = 3;
+for (const sel of [selL, selR]) for (const [k, name] of METHODS) sel.add(new Option(name, k));
+selL.value = "pre"; selR.value = "gt";
+function drawViewer() {
+  const nameOf = k => METHODS.find(m => m[0] === k)[1];
+  imgL.src = `assets/case${currentCase}_${selL.value}.jpg`; imgL.alt = `${nameOf(selL.value)}, case ${currentCase}`;
+  imgR.src = `assets/case${currentCase}_${selR.value}.jpg`; imgR.alt = `${nameOf(selR.value)}, case ${currentCase}`;
+  document.getElementById("tagL").textContent = nameOf(selL.value);
+  document.getElementById("tagR").textContent = nameOf(selR.value);
+  document.querySelectorAll(".cases button").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.case === currentCase)));
+}
+document.querySelectorAll(".cases button").forEach(b => b.addEventListener("click", () => { currentCase = +b.dataset.case; drawViewer(); }));
+selL.addEventListener("change", drawViewer); selR.addEventListener("change", drawViewer);
+split.addEventListener("input", () => stage.style.setProperty("--split", split.value + "%"));
+function setSplit(clientX) {
+  const r = stage.getBoundingClientRect();
+  const v = Math.min(100, Math.max(0, (clientX - r.left) / r.width * 100));
+  stage.style.setProperty("--split", v + "%"); split.value = Math.round(v);
+}
+let drag = null;                      // {x, y, active}: horizontal drags move the divider, vertical ones scroll
+stage.addEventListener("pointerdown", e => { drag = { x: e.clientX, y: e.clientY, active: false }; });
+stage.addEventListener("pointermove", e => {
+  if (!drag) return;
+  if (!drag.active) {
+    const dx = Math.abs(e.clientX - drag.x), dy = Math.abs(e.clientY - drag.y);
+    if (dx > 6 && dx > dy) { drag.active = true; stage.setPointerCapture(e.pointerId); }
+    else return;
+  }
+  setSplit(e.clientX);
+});
+stage.addEventListener("pointerup", e => { if (drag && !drag.active) setSplit(e.clientX); drag = null; });
+stage.addEventListener("pointercancel", () => { drag = null; });
+drawViewer();
+
+
+/* ---------- sortable table ---------- */
+const thead = document.querySelector("#results thead"), tbody = document.querySelector("#results tbody");
+let sortCol = -1, sortAsc = true;
+const best = TABLE.cols.map((_, j) => {
+  const col = TABLE.rows.map(r => r[2][j]);
+  return TABLE.dirs[j] > 0 ? Math.max(...col) : Math.min(...col);
+});
+function drawTable() {
+  thead.innerHTML = "<tr><th scope='col'>Method</th>" + TABLE.cols.map((c, j) => {
+    const arrow = TABLE.dirs[j] < 0 ? "↓" : "↑";
+    const sorted = j === sortCol ? (sortAsc ? "ascending" : "descending") : "none";
+    return `<th scope="col" aria-sort="${sorted}"><button type="button" data-j="${j}">${c} <span class="arrow">${arrow}</span></button></th>`;
+  }).join("") + "</tr>";
+  let rows = TABLE.rows.slice();
+  if (sortCol >= 0) rows.sort((a, b) => (a[2][sortCol] - b[2][sortCol]) * (sortAsc ? 1 : -1));
+  tbody.innerHTML = rows.map(([name, ours, v]) => `<tr class="${ours ? "ours" : ""}"><td>${name}</td>` +
+    v.map((x, j) => `<td class="${x === best[j] ? "best" : ""}">${x >= 100 ? x.toFixed(1) : (x >= 5 ? x.toFixed(2) : x.toFixed(3))}</td>`).join("") + "</tr>").join("");
+  thead.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+    const j = +b.dataset.j;
+    if (sortCol === j) sortAsc = !sortAsc; else { sortCol = j; sortAsc = TABLE.dirs[j] < 0; }
+    drawTable();
+  }));
+}
+drawTable();
+
+/* ---------- copy citation ---------- */
+document.getElementById("copyBib").addEventListener("click", async e => {
+  try { await navigator.clipboard.writeText(document.getElementById("bib").textContent); e.target.textContent = "Copied"; }
+  catch { e.target.textContent = "Select the text above to copy"; }
+  setTimeout(() => e.target.textContent = "Copy BibTeX", 2000);
+});
+</script>
+</body>
+</html>
