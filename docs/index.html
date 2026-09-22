@@ -187,7 +187,7 @@ footer { border-top: 1px solid var(--line); margin-top: 72px; padding-top: 22px;
 
   <section aria-labelledby="h-lim">
     <h2 id="h-lim">Limitations</h2>
-    <div class="prose"><p>Each generative family is a single configuration trained once at our capacity budget, so a tuned or larger model may close part of the gap. The cross-domain results and the metric probe are single runs. We synthesise one 2D slice per patient, and DICE and the AUROCs inherit the errors of the challenge's frozen models.</p></div>
+    <div class="prose"><p>Each generative family is a single configuration trained once at our capacity budget, so a tuned or larger model may close part of the gap. Both generative baselines are conventionally parameterised, generating the full post-contrast image, whereas our U-Net predicts a residual on the pre-contrast input, and the GAN's generator has no skip connections. Residual generative variants, such as an adversarially trained residual U-Net or a bridge flow from the pre-contrast latent, would give a stronger comparison. The cross-domain results and the metric probe are single runs. We synthesise one 2D slice per patient, and DICE and the AUROCs inherit the errors of the challenge's frozen models.</p></div>
   </section>
 
   <section aria-labelledby="h-cite">
