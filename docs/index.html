@@ -169,8 +169,11 @@ footer { border-top: 1px solid var(--line); margin-top: 72px; padding-top: 22px;
 
   <section aria-labelledby="h-table">
     <h2 id="h-table">Model comparison</h2>
-    <div class="prose"><p>Stratified split, shared objective. Select a column to sort by it. Our models are shaded and the best value in each column is bold. Each generative family is one configuration at matched capacity.</p></div>
+    <div class="prose"><p>Stratified split, shared objective. Select a column to sort by it. Our models are shaded and the best value in each column is bold. Only the U-Nets are residual: both generative baselines generate the full post-contrast image, the conventional way, with one configuration per family at matched capacity.</p></div>
     <div class="table-wrap"><table id="results"><thead></thead><tbody></tbody></table></div>
+    <div class="prose" style="margin-top:22px">
+      <p>The residual formulation alone does not explain the gap. In our ablation, a U-Net that predicts the post-contrast image directly still reaches MSE 0.52 and DICE 0.54. What both U-Nets share is an anatomy-preserving path from input to output: skip connections carry the pre-contrast detail through, and the residual adds a copy of the input on top. The generative baselines have to regenerate that anatomy, which is hard with about 1,350 training slices. We read this as a result about this setting at a matched budget, not a verdict on generative models.</p>
+    </div>
   </section>
 
   <section aria-labelledby="h-method">
@@ -209,7 +212,7 @@ footer { border-top: 1px solid var(--line); margin-top: 72px; padding-top: 22px;
 </main>
 
 <script>
-const TABLE = {"cols": ["MSE", "LPIPS", "SSIM", "FRD", "AUC-C", "AUC-T", "DICE", "HD95"], "dirs": [-1, -1, 1, -1, 1, 1, 1, -1], "rows": [["Residual U-Net", false, [0.486, 0.086, 0.499, 7.9, 0.808, 0.656, 0.487, 120.7]], ["Multi-task U-Net", false, [0.476, 0.087, 0.534, 8.79, 0.761, 0.677, 0.555, 92.5]], ["Conditional GAN", false, [0.894, 0.192, 0.199, 13.68, 0.83, 0.61, 0.127, 295.1]], ["Latent diffusion (flow)", false, [0.969, 0.159, 0.246, 8.62, 0.888, 0.635, 0.21, 193.5]], ["Ours (multi-task + enhancement loss)", true, [0.503, 0.091, 0.527, 6.55, 0.859, 0.668, 0.551, 83.0]], ["Ours (+ positive)", true, [0.506, 0.092, 0.529, 5.79, 0.822, 0.667, 0.545, 98.6]]]};
+const TABLE = {"cols": ["MSE", "LPIPS", "SSIM", "FRD", "AUC-C", "AUC-T", "DICE", "HD95"], "dirs": [-1, -1, 1, -1, 1, 1, 1, -1], "dec": [3, 3, 3, 2, 3, 3, 3, 1], "rows": [["Residual U-Net", false, [0.486, 0.086, 0.499, 7.9, 0.808, 0.656, 0.487, 120.7]], ["Residual multi-task U-Net", false, [0.476, 0.087, 0.534, 8.79, 0.761, 0.677, 0.555, 92.5]], ["Conditional GAN (full image)", false, [0.894, 0.192, 0.199, 13.68, 0.83, 0.61, 0.127, 295.1]], ["Latent flow model (full image)", false, [0.969, 0.159, 0.246, 8.62, 0.888, 0.635, 0.21, 193.5]], ["Ours (multi-task + enhancement loss)", true, [0.503, 0.091, 0.527, 6.55, 0.859, 0.668, 0.551, 83.0]], ["Ours (+ positive)", true, [0.506, 0.092, 0.529, 5.79, 0.822, 0.667, 0.545, 98.6]]]};
 const METHODS = [["pre", "Pre-contrast"], ["gt", "Ground truth"], ["multitask", "Ours (multi-task)"],
                  ["positive", "Ours (+ positive)"], ["unet", "Residual U-Net"], ["gan", "Conditional GAN"],
                  ["flow", "Latent diffusion (flow)"]];
@@ -270,7 +273,7 @@ function drawTable() {
   let rows = TABLE.rows.slice();
   if (sortCol >= 0) rows.sort((a, b) => (a[2][sortCol] - b[2][sortCol]) * (sortAsc ? 1 : -1));
   tbody.innerHTML = rows.map(([name, ours, v]) => `<tr class="${ours ? "ours" : ""}"><td>${name}</td>` +
-    v.map((x, j) => `<td class="${x === best[j] ? "best" : ""}">${x >= 100 ? x.toFixed(1) : (x >= 5 ? x.toFixed(2) : x.toFixed(3))}</td>`).join("") + "</tr>").join("");
+    v.map((x, j) => `<td class="${x === best[j] ? "best" : ""}">${x.toFixed(TABLE.dec[j])}</td>`).join("") + "</tr>").join("");
   thead.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
     const j = +b.dataset.j;
     if (sortCol === j) sortAsc = !sortAsc; else { sortCol = j; sortAsc = TABLE.dirs[j] < 0; }
